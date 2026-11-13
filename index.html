@@ -97,6 +97,8 @@ section { padding: 56px 0; border-bottom: 1px solid var(--line); }
 .creds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; }
 .creds ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; font-size: 15.5px; }
 .creds li span { display: block; color: var(--muted); font-size: 14px; }
+.badge-item { display: flex; gap: 12px; align-items: flex-start; }
+.badge-item img { flex: none; }
 footer { padding: 36px 0 56px; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline; }
 
@@ -177,7 +179,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: base
     <div>
       <span class="mono">04 · certifications</span>
       <ul>
-        <li>Databricks Certified Data Engineer Professional <span><a href="https://credentials.databricks.com/69385529-cd70-40b7-86be-3de26bdd8538">Verify credential</a> · valid Oct 2026 – Oct 2028</span></li>
+        <li class="badge-item"><img src="badges/databricks-data-engineer-professional.png" alt="Databricks Certified Data Engineer Professional badge" width="34" height="46"><div>Databricks Certified Data Engineer Professional <span><a href="https://credentials.databricks.com/69385529-cd70-40b7-86be-3de26bdd8538">Verify credential</a> · valid Oct 2026 – Oct 2028</span></div></li>
         <li>Google Cloud Professional Data Engineer <span><a href="https://www.credly.com/badges/1e553113-b168-414c-9fc8-109b76372451">Verify on Credly</a> · valid Oct 2026 – Oct 2028</span></li>
         <li>Google Cloud Professional Machine Learning Engineer <span>Issued Sep 2024</span></li>
       </ul>
