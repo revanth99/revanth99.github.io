@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revanth Reddy Bandaru, Data Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a pipeline run sheet. Mono "run log" labels, systems drawn as live DAGs, results shown as before/after bars. */
+:root {
+  --paper: #EEF0EC;
+  --surface: #F8F9F6;
+  --ink: #15181E;
+  --muted: #59606A;
+  --line: #C6CBC3;
+  --accent: #2B44E8;
+  --signal: #B87400;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0F1115; --surface: #171A20; --ink: #E8EAE5; --muted: #9AA1AB;
+    --line: #2D323B; --accent: #8394FF; --signal: #F0B23A; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0F1115; --surface: #171A20; --ink: #E8EAE5; --muted: #9AA1AB;
+  --line: #2D323B; --accent: #8394FF; --signal: #F0B23A; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+.mono { font-family: var(--mono); font-size: 13px; letter-spacing: 0.02em; color: var(--muted); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 700; line-height: 1.15; }
+h3 { font-size: 21px; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+
+header.hero { padding: 64px 0 48px; border-bottom: 1px solid var(--line); }
+.runline { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin-bottom: 28px; }
+.status { display: inline-flex; gap: 8px; align-items: center; color: var(--ink); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--signal) 22%, transparent); }
+.name { font-family: var(--mono); font-size: 15px; color: var(--ink); margin-bottom: 12px; }
+.thesis { font-size: clamp(38px, 6.4vw, 76px); font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; max-width: 15ch; }
+.thesis em { font-style: normal; color: var(--accent); }
+.lede { margin-top: 24px; font-size: 19px; color: var(--muted); }
+.lede strong { color: var(--ink); font-weight: 600; }
+
+section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+.sechead { display: grid; gap: 10px; margin-bottom: 32px; }
+
+/* Results */
+.results { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(220px, 2fr) minmax(120px, 0.7fr); gap: 20px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.row .what { font-weight: 600; }
+.row .what span { display: block; font-weight: 400; color: var(--muted); font-size: 14px; }
+.bars { display: grid; gap: 6px; }
+.bar { height: 10px; border-radius: 2px; }
+.bar.before { background: var(--line); width: 100%; }
+.bar.after { background: var(--accent); min-width: 4px; }
+.delta { font-family: var(--display); font-size: 26px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.delta span { display: block; font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* Systems */
+.system { display: grid; gap: 14px; margin-top: 40px; }
+.system:first-of-type { margin-top: 0; }
+.syshead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; align-items: baseline; }
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+.diagram svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.node rect { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+.node text.t { font-family: var(--body); font-weight: 600; font-size: 13.5px; fill: var(--ink); }
+.node text.s { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+.node { cursor: pointer; outline: none; }
+.node:hover rect, .node:focus-visible rect, .node.on rect { stroke: var(--accent); stroke-width: 2; }
+.node.on rect { fill: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.edge { fill: none; stroke: var(--muted); stroke-width: 1.3; }
+.pulse { fill: var(--signal); }
+.caption { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; padding: 14px 16px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 6px 6px 0; }
+.caption .k { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 3px; }
+.hint { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+/* AI */
+.ai { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.card p { font-size: 15.5px; color: var(--muted); }
+.note { margin-top: 24px; font-size: 15px; color: var(--muted); }
+
+/* Credentials */
+.creds { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; }
+.creds ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; font-size: 15.5px; }
+.creds li span { display: block; color: var(--muted); font-size: 14px; }
+footer { padding: 36px 0 56px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline; }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: 1fr auto; }
+  .row .bars { grid-column: 1 / -1; grid-row: 2; }
+  header.hero { padding-top: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .pulse { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="runline mono">
+      <span class="status"><span class="dot" aria-hidden="true"></span>open to work</span>
+      <span>remote · Dallas–Fort Worth, TX</span>
+      <span>7+ yrs · GCP · Databricks · Azure</span>
+    </div>
+    <div class="name">Revanth Reddy Bandaru / Data Engineer</div>
+    <h1 class="thesis">I build the data that <em>finance</em> and <em>clinical</em> teams decide on.</h1>
+    <p class="lede">At CVS Health I built pipelines that took underwriters' reconciliation from <strong>30 days to 12 hours</strong>. Before that, at Mphasis, I built real-time clinical data ingestion on GCP. Below are the systems, the results, and how I use AI to do the work.</p>
+  </div>
+</header>
+
+<section id="results">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="mono">01 · results</span>
+      <h2>What changed after I shipped</h2>
+      <p>Grey bar is the starting point; blue is where it ended up.</p>
+    </div>
+    <div class="results" id="results-rows"></div>
+  </div>
+</section>
+
+<section id="systems">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="mono">02 · systems</span>
+      <h2>Three systems I designed and built</h2>
+      <p>Select any step in a diagram to see what it does.</p>
+    </div>
+    <div id="systems-list"></div>
+  </div>
+</section>
+
+<section id="ai">
+  <div class="wrap">
+    <div class="sechead">
+      <span class="mono">03 · how I work with AI</span>
+      <h2>AI does the repetitive parts. I own the judgment.</h2>
+    </div>
+    <div class="ai">
+      <div class="card">
+        <span class="mono">claude skills</span>
+        <h3>Teaching AI our business rules</h3>
+        <p>Out of the box, AI guessed at PBM terms and abbreviations. I wrote custom Claude skills that hold our business rules and domain vocabulary, so answers matched how the business actually works.</p>
+      </div>
+      <div class="card">
+        <span class="mono">claude + github copilot</span>
+        <h3>Unit tests on every commit</h3>
+        <p>I set up Claude and Copilot to generate unit tests for commits to feature branches. They catch code-level edge cases; I still check that the logic matches the business rule.</p>
+      </div>
+      <div class="card">
+        <span class="mono">built during my job search</span>
+        <h3>A resume tailoring skill with guardrails</h3>
+        <p>It reads my master resume and a job posting, rewrites toward the role, and saves a Google Doc. The rules matter most: use only real facts, keep metrics worded the same everywhere, and flag any bullet that stretches what I did.</p>
+      </div>
+    </div>
+    <p class="note">About this page: I chose the stories, numbers and structure, and directed the design. Claude wrote the code, and I reviewed every claim against my resume.</p>
+  </div>
+</section>
+
+<section id="credentials">
+  <div class="wrap creds">
+    <div>
+      <span class="mono">04 · certifications</span>
+      <ul>
+        <li>Databricks Certified Data Engineer Professional</li>
+        <li>Google Cloud Professional Data Engineer <span><a href="https://www.credly.com/badges/1e553113-b168-414c-9fc8-109b76372451">Verify on Credly</a> · valid Oct 2026 – Oct 2028</span></li>
+        <li>Google Cloud Professional Machine Learning Engineer <span>Issued Sep 2024</span></li>
+      </ul>
+    </div>
+    <div>
+      <span class="mono">education</span>
+      <ul>
+        <li>MS, Data Science <span>University of New Haven · GPA 3.72</span></li>
+        <li>B.Tech, Electronics &amp; Communication Engineering <span>JNTU Hyderabad</span></li>
+      </ul>
+    </div>
+    <div>
+      <span class="mono">experience</span>
+      <ul>
+        <li>CVS Health, Data Engineer <span>Sep 2022 – Nov 2026</span></li>
+        <li>Mphasis, Data Engineer <span>Jun 2018 – Dec 2020 · promoted within 7 months</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="mono">contact</span>
+    <a href="https://www.linkedin.com/in/revanth-reddy-bandaru/">linkedin.com/in/revanth-reddy-bandaru</a>
+    <span>revanthreddy.bandaru@gmail.com</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // ---------- Results ----------
+  var results = [
+    { what: "Analyst reconciliation", ctx: "CVS · forecast vs. actuals Datahub", before: 720, after: 12, big: "30d → 12h", unit: "hours" },
+    { what: "Manual pipeline intervention", ctx: "CVS · event-driven orchestration", before: 100, after: 4, big: "−96%", unit: "manual steps" },
+    { what: "Long-running query", ctx: "CVS · helped tune", before: 30, after: 2, big: "30 → 2 min", unit: "minutes" },
+    { what: "Databricks job run time", ctx: "CVS · serverless migration", before: 100, after: 70, big: "−30%", unit: "run time" },
+    { what: "Databricks compute cost", ctx: "CVS · 15 clusters retired", before: 100, after: 80, big: "−20%", unit: "cost" }
+  ];
+  var rowsEl = document.getElementById("results-rows");
+  results.forEach(function (r) {
+    var pct = Math.max(0.6, (r.after / r.before) * 100);
+    var row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML =
+      '<div class="what">' + r.what + '<span>' + r.ctx + '</span></div>' +
+      '<div class="bars" role="img" aria-label="' + r.what + ': from ' + r.before + ' to ' + r.after + ' ' + r.unit + '">' +
+        '<div class="bar before"></div><div class="bar after" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+      '<div class="delta">' + r.big + '<span>' + r.unit + '</span></div>';
+    rowsEl.appendChild(row);
+  });
+
+  // ---------- Systems ----------
+  var W = 150, H = 56;
+  var systems = [
+    {
+      id: "aim", tag: "CVS Health · Azure Databricks", title: "Event-driven claims orchestration (AIM)",
+      h: 250,
+      result: "Underwriters see P&L variance root causes within 12 hours of data landing. Manual pipeline intervention dropped 96%.",
+      nodes: [
+        { id: "a1", x: 20,  y: 82,  t: "Request payload", s: "event trigger", d: "A monthly run starts from a payload describing what to process, instead of someone clicking through pipelines." },
+        { id: "a2", x: 200, y: 82,  t: "Azure Function App", s: "routes · job ID", d: "Accepts the payload, picks the right ADF pipeline, triggers it, and returns a job ID so the run can be tracked." },
+        { id: "a3", x: 380, y: 82,  t: "Data Factory", s: "pipeline per payload", d: "ADF pipelines call the Databricks notebooks that do the transformation and analysis." },
+        { id: "a4", x: 560, y: 82,  t: "Databricks", s: "PySpark · serverless", d: "PySpark and SQL notebooks on serverless compute. Moving here cut run time 30% and cost 20%, retiring 15 clusters." },
+        { id: "a5", x: 740, y: 30,  t: "Datahub", s: "actuals + forecasts", d: "One repository for actuals and forecast datasets. Reconciliation went from 30 days to 12 hours." },
+        { id: "a6", x: 740, y: 150, t: "Underwriters", s: "P&L variance", d: "Underwriters use the output to find variance root causes and reduce leakage across client portfolios." },
+        { id: "a7", x: 200, y: 180, t: "Job monitoring", s: "status by job ID", d: "Every run is traceable by its job ID, so failures surface without anyone watching the jobs." }
+      ],
+      edges: [["a1","a2"],["a2","a3"],["a3","a4"],["a4","a5"],["a5","a6"],["a2","a7"]]
+    },
+    {
+      id: "fdp", tag: "CVS Health · Google Cloud", title: "PBM Financial Data Platform (FDP)",
+      h: 250,
+      result: "A single source of truth for PBM financial reporting. 20 hours of manual reconciliation eliminated.",
+      nodes: [
+        { id: "f1", x: 20,  y: 82,  t: "SFTP sources", s: "multiple systems", d: "Financial data from several source systems arrives over SFTP." },
+        { id: "f2", x: 200, y: 82,  t: "Cloud Storage", s: "data lake", d: "I designed the data lake: storage layout, file formats, security and access controls." },
+        { id: "f3", x: 380, y: 82,  t: "Dataproc · Spark", s: "ETL transforms", d: "Spark jobs on Dataproc clean, join and transform the financial data." },
+        { id: "f4", x: 380, y: 180, t: "Composer / Airflow", s: "orchestration", d: "Airflow DAGs on Cloud Composer schedule and coordinate the ETL." },
+        { id: "f5", x: 560, y: 82,  t: "BigQuery", s: "Financial Data Mart", d: "Business rules from analysts and data scientists, translated into BigQuery data models, with tuned loads and queries." },
+        { id: "f6", x: 740, y: 82,  t: "Finance decisions", s: "rebates · pricing", d: "The data mart feeds the calculation engine behind contract negotiation, rebate compliance and pricing." },
+        { id: "f7", x: 200, y: 180, t: "Jenkins + GitHub", s: "CI/CD", d: "CI/CD for data workflow deployments shortened release cycles." }
+      ],
+      edges: [["f1","f2"],["f2","f3"],["f3","f5"],["f5","f6"],["f4","f3"],["f7","f4"]]
+    },
+    {
+      id: "cdr", tag: "Mphasis · Google Cloud", title: "Real-time clinical data ingestion",
+      h: 250,
+      result: "Streaming and batch clinical data in one platform, with patterns and monitoring adopted across teams.",
+      nodes: [
+        { id: "c1", x: 20,  y: 30,  t: "HL7 v2 · XML", s: "real-time streams", d: "Real-time HL7 v2 and XML messages from clinical systems." },
+        { id: "c2", x: 20,  y: 150, t: "CSV files", s: "batch", d: "Batch CSV extracts land alongside the streams." },
+        { id: "c3", x: 200, y: 82,  t: "Dataflow · Beam", s: "Java · harmonize", d: "Custom Dataflow pipelines in Java/Apache Beam parse and harmonize both streaming and batch records." },
+        { id: "c4", x: 380, y: 82,  t: "Whistle maps", s: "JSON → FHIR", d: "Transformation maps convert source JSON into FHIR, which sped up onboarding new data sources." },
+        { id: "c5", x: 560, y: 82,  t: "FHIR R4 Store", s: "Healthcare API", d: "Records load into a FHIR R4 store through the Google Healthcare API." },
+        { id: "c6", x: 740, y: 82,  t: "BigQuery", s: "analytics · features", d: "Analytics and feature engineering across the enterprise, built on reusable pipeline patterns." },
+        { id: "c7", x: 560, y: 180, t: "Monitoring & audit", s: "observability", d: "Dashboards and audit reporting that became the repository's standard observability layer." }
+      ],
+      edges: [["c1","c3"],["c2","c3"],["c3","c4"],["c4","c5"],["c5","c6"],["c5","c7"]]
+    }
+  ];
+
+  var NS = "http://www.w3.org/2000/svg";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function el(name, attrs) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+
+  function edgePath(a, b) {
+    var acx = a.x + W / 2, acy = a.y + H / 2, bcx = b.x + W / 2, bcy = b.y + H / 2;
+    var dx = bcx - acx, dy = bcy - acy;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      var sx = dx > 0 ? a.x + W : a.x, ex = dx > 0 ? b.x : b.x + W;
+      var mx = (sx + ex) / 2;
+      return "M" + sx + "," + acy + " C" + mx + "," + acy + " " + mx + "," + bcy + " " + ex + "," + bcy;
+    }
+    var sy = dy > 0 ? a.y + H : a.y, ey = dy > 0 ? b.y : b.y + H;
+    var my = (sy + ey) / 2;
+    return "M" + acx + "," + sy + " C" + acx + "," + my + " " + bcx + "," + my + " " + bcx + "," + ey;
+  }
+
+  var list = document.getElementById("systems-list");
+  systems.forEach(function (sys, si) {
+    var wrap = document.createElement("div");
+    wrap.className = "system";
+    wrap.innerHTML =
+      '<div class="syshead"><h3>' + sys.title + '</h3><span class="mono">' + sys.tag + '</span></div>' +
+      '<div class="diagram"></div>' +
+      '<div class="caption" aria-live="polite"><span class="k">result</span><p>' + sys.result + '</p></div>';
+    list.appendChild(wrap);
+
+    var svg = el("svg", { viewBox: "0 0 910 " + sys.h, role: "group", "aria-label": sys.title + " diagram" });
+    var defs = el("defs", {});
+    var marker = el("marker", { id: "arr-" + sys.id, viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
+    marker.appendChild(el("path", { d: "M0,0 L10,5 L0,10 z", fill: "currentColor", style: "fill: var(--muted)" }));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+
+    var byId = {};
+    sys.nodes.forEach(function (n) { byId[n.id] = n; });
+
+    sys.edges.forEach(function (e, ei) {
+      var d = edgePath(byId[e[0]], byId[e[1]]);
+      var pid = "p-" + sys.id + "-" + ei;
+      svg.appendChild(el("path", { id: pid, d: d, "class": "edge", "marker-end": "url(#arr-" + sys.id + ")" }));
+      if (!reduce) {
+        var c = el("circle", { r: "3.2", "class": "pulse" });
+        var am = el("animateMotion", { dur: "2.6s", repeatCount: "indefinite", begin: (ei * 0.35 + si * 0.2).toFixed(2) + "s" });
+        var mp = el("mpath", {});
+        mp.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#" + pid);
+        mp.setAttribute("href", "#" + pid);
+        am.appendChild(mp);
+        c.appendChild(am);
+        svg.appendChild(c);
+      }
+    });
+
+    var caption = wrap.querySelector(".caption");
+    var nodesG = [];
+    function show(n, g) {
+      nodesG.forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
+      if (!n) {
+        caption.innerHTML = '<span class="k">result</span><p>' + sys.result + '</p>';
+        return;
+      }
+      g.classList.add("on");
+      g.setAttribute("aria-pressed", "true");
+      caption.innerHTML = '<span class="k">' + n.t.toLowerCase() + '</span><p>' + n.d + '</p>';
+    }
+
+    sys.nodes.forEach(function (n) {
+      var g = el("g", { "class": "node", tabindex: "0", role: "button", "aria-pressed": "false", "aria-label": n.t + ": " + n.s });
+      g.appendChild(el("rect", { x: n.x, y: n.y, width: W, height: H, rx: "5" }));
+      var t = el("text", { x: n.x + 12, y: n.y + 24, "class": "t" }); t.textContent = n.t; g.appendChild(t);
+      var s = el("text", { x: n.x + 12, y: n.y + 42, "class": "s" }); s.textContent = n.s; g.appendChild(s);
+      function toggle() { if (g.classList.contains("on")) show(null); else show(n, g); }
+      g.addEventListener("click", toggle);
+      g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(); } });
+      nodesG.push(g);
+      svg.appendChild(g);
+    });
+
+    wrap.querySelector(".diagram").appendChild(svg);
+  });
+})();
+</script>
+</body>
+</html>
